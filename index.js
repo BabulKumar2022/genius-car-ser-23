@@ -35,24 +35,28 @@ async function run() {
   try {
  
     await client.connect();
-    const serviceCollection = client.db('genius-car-23').collection('service') 
-  
+    const serviceCollection = client.db('genius-car-23').collection('service'); 
+    const orderCollection = client.db('genius-car-23').collection('order');
   //get all
   app.get('/service', async (req, res)=>{
     const query = {};
     const cursor = serviceCollection.find(query);
     const services = await cursor.toArray();
     res.send(services);
- 
+     
   }) 
   // get one
-  app.get('/service/:id', async (req, res)=>{
-    const id = req.params.id;
-    const query =  {_id: ObjectId};
+  app.get('/service/:id([0-9a-fA-F]{24})', async (req, res)=>{
+    
+    const id = req.params.id; 
+    
+    const query =  {_id: new ObjectId(id)};
+    // console.log(id)
     const service = await serviceCollection.findOne(query);
     res.send(service)
-  })
-//post
+    // console.log(service)
+  }) 
+//post  
   app.post('/service', async(req, res)=>{
   const newService = req.body;
   const result = await serviceCollection.insertOne(newService);
@@ -65,7 +69,23 @@ async function run() {
     const result = await serviceCollection.deleteOne(query);
     res.send(result);
   })
-   
+   //post for orderCollection
+
+  app.post('/order', async(req, res) =>{
+    const order = req.body;
+    const result = await orderCollection.insertOne(order);
+    res.send(result)
+  })
+
+
+
+
+
+
+
+
+
+
 
 
     console.log(" connected to MongoDB!");
