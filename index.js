@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken')
 require('dotenv').config();
 const port =process.env.PORT || 5000;
 const app = express();
@@ -11,6 +12,26 @@ app.use(cors());
 app.use(express.json());
 
 
+//verifyToken function
+function verifyJWT(req, res, next){
+  const authHeader = req.headers.authorization;
+  if(! authHeader){
+    return res.status(401).send({message: "unauthorized access"})
+  }
+  const token = authHeader.split(' ')[1];
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded)=>{
+    if(err){
+      return res.status(403).send({message: 'Forbidden access'})
+    }
+    req.decoded = decoded;
+    console.log('decoded', decoded)
+    next()
+  });
+  // console.log("inside verifyJWT", authHeader);
+ 
+}
+ 
+ 
 app.get('/', (req, res)=>{
     res.send("Running genius server")
 });
@@ -37,7 +58,21 @@ async function run() {
     await client.connect();
     const serviceCollection = client.db('genius-car-23').collection('service'); 
     const orderCollection = client.db('genius-car-23').collection('order');
-  //get all
+  
+  //get token
+  app.post('/getToken', async(req, res)=>{
+    const user = req.body;
+    const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET,{
+      expiresIn: '1d'
+    });
+    res.send({accessToken})
+
+
+
+  })
+  
+  
+    //get all
   app.get('/service', async (req, res)=>{
     const query = {};
     const cursor = serviceCollection.find(query);
@@ -79,12 +114,18 @@ async function run() {
   
 
   //get for orderCollection API
-  app.get('/orders', async(req, res)=>{
+  app.get('/orders', verifyJWT,  async(req, res)=>{
+   const decodedEmail = req.decoded.email;
     const email = req.query.email;
-    const query ={email};
-    const cursor = orderCollection.find(query);
-    const orders = await cursor.toArray();
-    res.send(orders)
+    if(email == decodedEmail){
+      const query ={email};
+      const cursor = orderCollection.find(query);
+      const orders = await cursor.toArray();
+      res.send(orders)
+    }else{
+      res.status(403).send({message: 'Forbidden access'})
+    }
+
   })
 
 
@@ -99,6 +140,7 @@ async function run() {
 
 
     console.log(" connected to MongoDB!");
+    // console.log(process.env.ACCESS_TOKEN_SECRET)
   } finally {
 
    
