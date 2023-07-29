@@ -39,9 +39,9 @@ app.listen(port, ()=>{
     console.log("Server running on", port)
 })
 // genius-car-user
-// dSlZbUyDrl1nFOUt
-
-const uri = `mongodb+srv://genius-car-user:dSlZbUyDrl1nFOUt@cluster0.jpegwwj.mongodb.net/?retryWrites=true&w=majority`;
+// dSlZbUyDrl1nFOUt  
+// const uri = "mongodb://127.0.0.1:27017"
+const uri =  `mongodb+srv://genius-car-user:dSlZbUyDrl1nFOUt@cluster0.jpegwwj.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -97,10 +97,33 @@ async function run() {
   const result = await serviceCollection.insertOne(newService);
   res.send(result);
   })
+  //update service/product
+  app.put('/service/:id',   async(req, res)=>{
+    const id = req.params.id;
+    const updatedService = req.body;
+    const filter = {_id: new ObjectId(id)};
+    const options ={upsert: true};
+    const updatedDoc = {
+      $set: {
+       name: updatedService.name,      
+      description: updatedService.description,
+      price: updatedService.price,
+      img: updatedService.img,
+   
+
+      }
+
+    };
+    const result = await serviceCollection.updateOne(filter, updatedDoc, options);
+    res.send(result)
+
+    console.log(result)
+
+  })
   //delete
   app.delete('/service/:id', async(req, res)=>{
     const id =req.params.id;
-    const query ={_id: ObjectId};
+    const query ={_id: new ObjectId(id)};
     const result = await serviceCollection.deleteOne(query);
     res.send(result);
   })
@@ -110,6 +133,45 @@ async function run() {
     const order = req.body;
     const result = await orderCollection.insertOne(order);
     res.send(result)
+  //   const orderedService = await serviceCollection.findOne(order)
+  //  console.log(orderedService)
+    // const data = {
+    //     total_amount: 100,
+    //     currency: 'BDT',
+    //     tran_id: 'REF123', // use unique tran_id for each api call
+    //     success_url: 'http://localhost:3030/success',
+    //     fail_url: 'http://localhost:3030/fail',
+    //     cancel_url: 'http://localhost:3030/cancel',
+    //     ipn_url: 'http://localhost:3030/ipn',
+    //     shipping_method: 'Courier',
+    //     product_name: 'Computer.',
+    //     product_category: 'Electronic',
+    //     product_profile: 'general',
+    //     cus_name: 'Customer Name',
+    //     cus_email: 'customer@example.com',
+    //     cus_add1: 'Dhaka',
+    //     cus_add2: 'Dhaka',
+    //     cus_city: 'Dhaka',
+    //     cus_state: 'Dhaka',
+    //     cus_postcode: '1000',
+    //     cus_country: 'Bangladesh',
+    //     cus_phone: '01711111111',
+    //     cus_fax: '01711111111',
+    //     ship_name: 'Customer Name',
+    //     ship_add1: 'Dhaka',
+    //     ship_add2: 'Dhaka',
+    //     ship_city: 'Dhaka',
+    //     ship_state: 'Dhaka',
+    //     ship_postcode: 1000,
+    //     ship_country: 'Bangladesh',
+    // };
+    // const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live)
+    // sslcz.init(data).then(apiResponse => {
+    //     // Redirect the user to payment gateway
+    //     let GatewayPageURL = apiResponse.GatewayPageURL
+    //     res.redirect(GatewayPageURL)
+    //     console.log('Redirecting to: ', GatewayPageURL)
+    // });
   });
   
 
