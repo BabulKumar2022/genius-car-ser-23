@@ -140,6 +140,7 @@ async function run() {
 //    Store Password (API/Secret Key): 
 //----------------------------------------------------------
 const trans_id = new ObjectId().toString();
+
   app.post('/order', async(req, res) =>{
     const order = req.body;
     // const result = await orderCollection.insertOne(order);
@@ -150,7 +151,7 @@ const trans_id = new ObjectId().toString();
         total_amount: product?.price,
         currency: 'BDT',
         tran_id: trans_id, // use unique tran_id for each api call
-        success_url: 'http://localhost:5000/success/tranId',
+        success_url: `http://localhost:5000/payment/success/${trans_id}`,
         fail_url: 'http://localhost:3030/fail',
         cancel_url: 'http://localhost:3030/cancel',
         ipn_url: 'http://localhost:3030/ipn',
@@ -181,12 +182,34 @@ const trans_id = new ObjectId().toString();
     sslcz.init(data).then(apiResponse => {
         // Redirect the user to payment gateway
         let GatewayPageURL = apiResponse.GatewayPageURL
-        res.send({url: GatewayPageURL})
+        res.send({url: GatewayPageURL});
+        const finalOrder ={
+          product,
+          paidStatus: false,
+          transactionId: trans_id,
+        };
+        const result =  orderCollection.insertOne(finalOrder);
+
         console.log('Redirecting to: ', GatewayPageURL)
+    
+        
     });
-app.post('payment/success/tranId', (req, res)=>{
-  console.log(req.params.tranId)
-})
+  
+app.post('/payment/success/:tranId', async (req, res)=>{
+  console.log(req.params.tranId);
+  const result = await orderCollection.updateOne(
+    {transactionId: req.params.tranId},
+    {
+      $set:{
+        paidStatus: true,
+      }
+    }
+  );
+  if(result.modifiedCount > 0){
+    res.redirect(`http://localhost:3000/payment/success/${req.params.tranId}`)
+  }
+
+});
 
 
 
