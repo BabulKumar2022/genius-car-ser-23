@@ -152,7 +152,7 @@ const trans_id = new ObjectId().toString();
         currency: 'BDT',
         tran_id: trans_id, // use unique tran_id for each api call
         success_url: `http://localhost:5000/payment/success/${trans_id}`,
-        fail_url: 'http://localhost:3030/fail',
+        fail_url: `http://localhost:5000/payment/fail/${trans_id}`,
         cancel_url: 'http://localhost:3030/cancel',
         ipn_url: 'http://localhost:3030/ipn',
         shipping_method: 'Courier',
@@ -183,7 +183,8 @@ const trans_id = new ObjectId().toString();
         // Redirect the user to payment gateway
         let GatewayPageURL = apiResponse.GatewayPageURL
         res.send({url: GatewayPageURL});
-        const finalOrder ={
+
+        const finalOrder = {
           product,
           paidStatus: false,
           transactionId: trans_id,
@@ -195,23 +196,29 @@ const trans_id = new ObjectId().toString();
         
     });
   
-app.post('/payment/success/:tranId', async (req, res)=>{
-  console.log(req.params.tranId);
-  const result = await orderCollection.updateOne(
-    {transactionId: req.params.tranId},
-    {
-      $set:{
-        paidStatus: true,
+  app.post('/payment/success/:tranId', async (req, res)=>{
+    console.log(req.params.tranId);
+    const result = await orderCollection.updateOne(
+      {transactionId: req.params.tranId},
+      {
+        $set:{
+          paidStatus: true,
+        }
       }
+    );
+    if(result.modifiedCount > 0){
+      res.redirect(`http://localhost:3000/payment/success/${req.params.tranId}`)
     }
-  );
-  if(result.modifiedCount > 0){
-    res.redirect(`http://localhost:3000/payment/success/${req.params.tranId}`)
+
+  });
+
+app.post('payment/fail/:tranId', async(req, res)=>{
+  const result = await orderCollection.deleteOne({transactionId: req.params.tranId})
+  if(result.deletedCount){
+    res.redirect(`http://localhost:3000/payment/fail/${req.params.tranId}`)
   }
 
-});
-
-
+})
 
   });
   
